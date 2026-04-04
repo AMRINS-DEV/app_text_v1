@@ -1,7 +1,11 @@
-import app from "./app.js";
+import express, { NextFunction, Request, Response } from "express";
+const app = express();
 
-const PORT = Number(process.env.PORT) || 3000;
+app.use(express.json());
 
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+app.get("/", (_req: Request, res: Response) => {
+  res.status(200).json({ message: "API is running" });
 });
+
+
+app.listen(3000);
