@@ -1,0 +1,21 @@
+[package]
+name = "mock-mt5-bridge"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Test double for the MQL5 bridge EA (§5.4, doc's own §19 Prompt 2: 'a mock bridge for tests'). Speaks the exact wire protocol in adapter-mt5::protocol so adapter-mt5 and the latency budget can be exercised without a real MT5 terminal."
+
+[lib]
+name = "mock_mt5_bridge"
+path = "src/lib.rs"
+
+[[bin]]
+name = "mock-mt5-bridge"
+path = "src/main.rs"
+
+[dependencies]
+domain.workspace = true
+adapter-mt5.workspace = true
+zeromq = "0.6"
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "time", "signal"] }

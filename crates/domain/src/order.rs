@@ -1,3 +1,4 @@
+use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
 use serde::{Deserialize, Serialize};
 use smallvec::SmallVec;
 
@@ -7,7 +8,10 @@ use crate::ids::SymbolId;
 /// The only message that authorizes an order. Produced exclusively by
 /// `crates/risk` after the expectancy gate (§8.5) passes — agents and the
 /// strategy VM cannot construct one that reaches the broker directly.
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+///
+/// rkyv zero-copy in addition to serde: this crosses the MT5 bridge wire on
+/// the hot path (§5.2 "Order encode + send to bridge: 5-20 µs"), same as `Tick`.
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct OrderIntent {
     /// Idempotency key (ULID). The execution router must treat resubmission
     /// with the same `client_id` as a no-op, not a duplicate order.
@@ -31,7 +35,7 @@ pub struct OrderIntent {
 
 pub type BrokerOrderId = u64;
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub enum ExecEvent {
     Fill { client_id: u128, broker_order_id: BrokerOrderId, fill_price: i64, qty: i64, ts_ns: u64 },
     Reject { client_id: u128, reason: String, ts_ns: u64 },
@@ -61,5 +65,29 @@ mod tests {
         let json = serde_json::to_string(&o).unwrap();
         let back: OrderIntent = serde_json::from_str(&json).unwrap();
         assert_eq!(o, back);
+    }
+
+    #[test]
+    fn rkyv_zero_copy_roundtrip() {
+        let o = OrderIntent {
+            client_id: 42,
+            symbol_id: 1,
+            side: Side::Sell,
+            qty: 250,
+            order_type: OrderType::Limit,
+            limit_px: Some(100_000),
+            sl: Some(99_000),
+            tp: Some(101_000),
+            tif: TimeInForce::Ioc,
+            mode: TradingMode::Aggressive,
+            max_slippage_pts: 3,
+            signal_ids: SmallVec::from_slice(&[7, 9]),
+        };
+        let bytes = rkyv::to_bytes::<rkyv::rancor::Error>(&o).unwrap();
+        let archived = rkyv::access::<ArchivedOrderIntent, rkyv::rancor::Error>(&bytes).unwrap();
+        assert_eq!(archived.client_id, 42);
+        assert_eq!(archived.qty, 250);
+        let side: Side = rkyv::deserialize::<_, rkyv::rancor::Error>(&archived.side).unwrap();
+        assert_eq!(side, Side::Sell);
     }
 }

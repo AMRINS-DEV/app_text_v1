@@ -15,7 +15,7 @@ pub mod tick;
 
 pub use enums::{Direction, RegimeTag, Side, SignalSource, TimeInForce, TradingMode, OrderType};
 pub use ids::SymbolId;
-pub use order::{BrokerOrderId, ExecEvent, OrderIntent};
+pub use order::{ArchivedExecEvent, ArchivedOrderIntent, BrokerOrderId, ExecEvent, OrderIntent};
 pub use ports::{AccountSnapshot, Broker, FeedCaps, MarketDataSource, PortError, SymbolConstraints, SymbolSpec, Timeframe};
 pub use signal::Signal;
 pub use tick::{ArchivedTick, Bar, Tick, TickFlags};

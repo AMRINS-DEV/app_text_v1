@@ -1,3 +1,4 @@
+use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash)]
@@ -7,20 +8,23 @@ pub enum Direction {
     Flat,
 }
 
-#[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash)]
+// Side/OrderType/TimeInForce/TradingMode also derive rkyv: they appear in
+// `OrderIntent`, which crosses the MT5 bridge wire on the hot path (§5.2:
+// "Order encode + send to bridge: 5-20 µs") and must zero-copy like `Tick`.
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum Side {
     Buy,
     Sell,
 }
 
-#[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum OrderType {
     Market,
     Limit,
     Stop,
 }
 
-#[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum TimeInForce {
     Gtc,
     Ioc,
@@ -29,7 +33,7 @@ pub enum TimeInForce {
 
 /// Risk profiles applied to the same code path — never separate strategy
 /// implementations (design doc §9.1).
-#[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum TradingMode {
     Normal,
     Aggressive,

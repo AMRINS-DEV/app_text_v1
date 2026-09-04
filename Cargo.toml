@@ -19,6 +19,7 @@ members = [
   "crates/bin/tradeos-core",
   "crates/bin/tradeos-replay",
   "crates/bin/tradeos-bench",
+  "crates/bin/mock-mt5-bridge",
   "crates/bench",
 ]
 
@@ -45,6 +46,7 @@ adapter-mt5 = { path = "crates/adapters/mt5" }
 adapter-tradingview = { path = "crates/adapters/tradingview" }
 adapter-ctrader = { path = "crates/adapters/ctrader" }
 adapter-binance = { path = "crates/adapters/binance" }
+mock-mt5-bridge = { path = "crates/bin/mock-mt5-bridge" }
 
 # shared external deps (single version across the workspace)
 serde = { version = "1", features = ["derive"] }

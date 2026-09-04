@@ -48,3 +48,7 @@ proto:
 # Deterministic replay regression harness (bit-identical order stream from recorded ticks)
 replay file:
     cargo run -p tradeos-replay -- --input {{file}}
+
+# Run the MT5 bridge test double standing in for a real MQL5 terminal (§5.4)
+mock-bridge:
+    cargo run -p mock-mt5-bridge -- --tick-addr tcp://127.0.0.1:28001 --order-addr tcp://127.0.0.1:28002

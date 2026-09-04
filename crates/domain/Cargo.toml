@@ -11,7 +11,7 @@ serde.workspace = true
 smallvec.workspace = true
 uuid.workspace = true
 thiserror.workspace = true
-rkyv = { version = "0.8", features = ["bytecheck"] }
+rkyv = { version = "0.8", features = ["bytecheck", "smallvec-1"] }
 bitflags = { version = "2", features = ["serde"] }
 
 [dev-dependencies]

@@ -10,3 +10,6 @@ description = "Deterministic event replay engine (§P4, §15). Recorded tick fil
 domain.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+market-data.workspace = true
+features.workspace = true
+risk.workspace = true

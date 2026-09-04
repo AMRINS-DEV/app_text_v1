@@ -9,3 +9,4 @@ description = "Offline replay / regression harness (§4, §15 item 2: determinis
 [dependencies]
 replay.workspace = true
 domain.workspace = true
+mock-mt5-bridge.workspace = true
