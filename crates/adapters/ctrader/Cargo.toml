@@ -1,0 +1,10 @@
+[package]
+name = "adapter-ctrader"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "cTrader adapter (native WS/REST). v2 stub proving the same MarketDataSource/Broker traits work across a second platform with zero core changes (§17 Phase 8)."
+
+[dependencies]
+domain.workspace = true

@@ -1,0 +1,11 @@
+[package]
+name = "risk"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Sizing, SL/TP, trailing, drawdown, safety guards (§9). Deterministic, no LLM calls, no randomness (P5)."
+
+[dependencies]
+domain.workspace = true
+thiserror.workspace = true

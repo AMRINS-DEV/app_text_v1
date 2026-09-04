@@ -1,0 +1,29 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "TradeOS",
+  "version": "0.1.0",
+  "identifier": "com.tradeos.desktop",
+  "build": {
+    "beforeDevCommand": "pnpm --filter @tradeos/dashboard dev",
+    "beforeBuildCommand": "pnpm --filter @tradeos/dashboard build",
+    "devUrl": "http://localhost:3000",
+    "frontendDist": "../../dashboard/.next"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "TradeOS",
+        "width": 1440,
+        "height": 900
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": []
+  }
+}

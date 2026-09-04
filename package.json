@@ -1,29 +1,22 @@
 {
-  "name": "app_1",
-  "version": "1.0.0",
-  "description": "",
-  "main": "dist/server.js",
-  "type": "module",
-  "scripts": {
-    "dev": "tsx watch src/server.ts",
-    "build": "node -e \"require('fs').rmSync('dist',{ recursive: true, force: true })\" && tsc -p tsconfig.json",
-    "prestart": "npm run build",
-    "start": "node dist/server.js"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "name": "tradeos",
+  "version": "0.1.0",
+  "private": true,
+  "description": "TradeOS — multi-agent, multi-platform, latency-tiered algorithmic trading ecosystem",
+  "license": "UNLICENSED",
   "packageManager": "pnpm@10.33.0",
   "engines": {
-    "node": ">=18"
+    "node": ">=22"
   },
-  "dependencies": {
-    "express": "^5.2.1"
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test"
   },
   "devDependencies": {
-    "@types/express": "^5.0.6",
-    "@types/node": "^25.5.2",
-    "tsx": "^4.21.0",
-    "typescript": "^6.0.2"
+    "turbo": "^2.3.0",
+    "typescript": "^5.7.0"
   }
 }

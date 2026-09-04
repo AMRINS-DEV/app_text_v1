@@ -1,0 +1,10 @@
+[package]
+name = "adapter-mt5"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "MT5 adapter: ZeroMQ client talking to the MQL5 bridge EA (bridge/mt5). Full read+write, primary target platform (§5.4). Phase 1 scope."
+
+[dependencies]
+domain.workspace = true

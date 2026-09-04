@@ -1,0 +1,11 @@
+[package]
+name = "tradeos-replay"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Offline replay / regression harness (§4, §15 item 2: deterministic replay regression). Phase 1 exit criterion: 24h replay is bit-identical."
+
+[dependencies]
+replay.workspace = true
+domain.workspace = true

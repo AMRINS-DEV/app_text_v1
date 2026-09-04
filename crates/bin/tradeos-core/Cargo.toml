@@ -1,0 +1,16 @@
+[package]
+name = "tradeos-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Main engine binary (§4, §5.1). Phase 0: wires domain/market-data/features/strategy/risk together against simulated ticks to prove the crate boundaries; the pinned-thread SPSC pipeline is Phase 1 scope."
+
+[dependencies]
+domain.workspace = true
+market-data.workspace = true
+features.workspace = true
+strategy.workspace = true
+risk.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true

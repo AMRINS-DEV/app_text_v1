@@ -1,0 +1,10 @@
+[package]
+name = "adapter-binance"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Binance adapter (native WS/REST). v2 stub, same rationale as adapter-ctrader (§17 Phase 8)."
+
+[dependencies]
+domain.workspace = true

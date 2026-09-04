@@ -1,0 +1,19 @@
+{
+  "name": "@tradeos/ui",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Shared shadcn/ui + Radix component library (§3.2, §4: apps/dashboard/components/ui). Phase 4 scope.",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "echo 'no lint config yet'"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "@types/react": "^19.0.0"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  }
+}

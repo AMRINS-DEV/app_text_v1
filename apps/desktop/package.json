@@ -1,0 +1,15 @@
+{
+  "name": "@tradeos/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Tauri 2 shell wrapping the dashboard (§4, §13). GUI build needs system webview deps not present in this environment — see README.md.",
+  "scripts": {
+    "dev": "tauri dev",
+    "build": "echo 'skipped: tauri build needs webkit2gtk/gdk system deps not present in CI/this environment — see README.md'",
+    "typecheck": "echo 'no TS frontend of its own — wraps @tradeos/dashboard'",
+    "lint": "echo 'no lint config yet'"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.0.0"
+  }
+}

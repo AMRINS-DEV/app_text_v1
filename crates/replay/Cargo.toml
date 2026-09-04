@@ -1,0 +1,12 @@
+[package]
+name = "replay"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Deterministic event replay engine (§P4, §15). Recorded tick files must reproduce bit-identical orders — this is how the system is debugged and backtested with the same code that runs live."
+
+[dependencies]
+domain.workspace = true
+serde.workspace = true
+serde_json.workspace = true

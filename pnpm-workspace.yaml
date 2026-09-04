@@ -1,2 +1,7 @@
+packages:
+  - "apps/*"
+  - "services/gateway"
+  - "packages/*"
+
 allowBuilds:
   esbuild: false
