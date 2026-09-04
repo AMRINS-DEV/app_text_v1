@@ -1,5 +1,14 @@
 import { Module } from "@nestjs/common";
 
-/** P&L, equity curve, per-strategy/per-agent expectancy (§11.1, §7). Phase 4 scope. */
-@Module({})
+import { JwtAuthGuard } from "../../common/jwt-auth.guard";
+import { AuthModule } from "../auth/auth.module";
+import { StatsController } from "./stats.controller";
+import { StatsService } from "./stats.service";
+
+/** P&L, equity curve, per-strategy/per-agent expectancy (§11.1). */
+@Module({
+  imports: [AuthModule],
+  controllers: [StatsController],
+  providers: [StatsService, JwtAuthGuard],
+})
 export class StatsModule {}

@@ -1,27 +1,55 @@
-import { Body, Controller, Get, NotImplementedException, Param, Post } from "@nestjs/common";
+import { Body, Controller, Get, Param, Post, UseGuards } from "@nestjs/common";
+
+import { CurrentUser } from "../../common/current-user.decorator";
+import type { AuthenticatedUser } from "../../common/current-user.decorator";
+import { JwtAuthGuard } from "../../common/jwt-auth.guard";
+import { Roles, RolesGuard } from "../../common/roles.guard";
+import { TRADING_ROLES } from "../../common/roles";
+import { RequireStepUp, StepUpGuard } from "../../common/step-up.guard";
+import { ZodBody } from "../../common/zod-body.pipe";
+import { ClosePositionDto, SetModeDto } from "./trading.dto";
+import { TradingService } from "./trading.service";
 
 /** §11.2 key API surface (abridged) for the trading module. */
 @Controller("api/trading")
+@UseGuards(JwtAuthGuard, RolesGuard, StepUpGuard)
 export class TradingController {
+  constructor(private readonly trading: TradingService) {}
+
   @Post("mode")
-  setMode(@Body() _body: { mode: string }): never {
-    // Step-up auth required (§11.2) — enforced once AuthModule/RbacModule land.
-    throw new NotImplementedException("trading.mode is Phase 4 scope (needs gRPC client to tradeos-core)");
+  @Roles(...TRADING_ROLES)
+  @RequireStepUp()
+  setMode(@CurrentUser() user: AuthenticatedUser, @Body(new ZodBody(SetModeDto)) body: SetModeDto) {
+    this.trading.setMode(user.id, body.mode);
+    return { ok: true };
   }
 
   @Post("kill-switch")
-  killSwitch(): never {
-    // Immediate flatten+halt, single atomic operation, audit-logged (§9.5, §11.2).
-    throw new NotImplementedException("trading.kill-switch is Phase 4 scope (needs gRPC client to tradeos-core)");
+  @Roles(...TRADING_ROLES)
+  killSwitch(@CurrentUser() user: AuthenticatedUser) {
+    return this.trading.killSwitch(user.id);
+  }
+
+  @Post("kill-switch/reset")
+  @Roles(...TRADING_ROLES)
+  @RequireStepUp()
+  resetKillSwitch(@CurrentUser() user: AuthenticatedUser) {
+    this.trading.resetKillSwitch(user.id);
+    return { ok: true };
   }
 
   @Get("positions")
-  positions(): never {
-    throw new NotImplementedException("trading.positions is Phase 4 scope (needs gRPC client to tradeos-core)");
+  positions() {
+    return this.trading.getPositions();
   }
 
   @Post("positions/:id/close")
-  closePosition(@Param("id") _id: string, @Body() _body: { fraction?: number }): never {
-    throw new NotImplementedException("trading.positions.close is Phase 4 scope (needs gRPC client to tradeos-core)");
+  @Roles(...TRADING_ROLES)
+  closePosition(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param("id") id: string,
+    @Body(new ZodBody(ClosePositionDto)) body: ClosePositionDto,
+  ) {
+    return this.trading.closePosition(user.id, id, body.fraction);
   }
 }

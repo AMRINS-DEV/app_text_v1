@@ -1,5 +1,14 @@
 import { Module } from "@nestjs/common";
 
-/** Bars, indicators, downsampled series from QuestDB + L2 cache (§11.1, §11.2: GET /api/charts/bars). Phase 4 scope. */
-@Module({})
+import { JwtAuthGuard } from "../../common/jwt-auth.guard";
+import { AuthModule } from "../auth/auth.module";
+import { ChartsController } from "./charts.controller";
+import { ChartsService } from "./charts.service";
+
+/** Bars, indicators, downsampled series (§11.1). */
+@Module({
+  imports: [AuthModule],
+  controllers: [ChartsController],
+  providers: [ChartsService, JwtAuthGuard],
+})
 export class ChartsModule {}

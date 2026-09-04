@@ -17,10 +17,13 @@ import { SystemModule } from "./modules/system/system.module";
 import { RealtimeModule } from "./modules/realtime/realtime.module";
 
 /**
- * §11.1 module map. Every module below is a Phase 0 stub (no providers,
- * empty controllers) except where noted — they exist so the module
- * boundaries and RBAC/auth wiring points are fixed before Phase 4 fills
- * in real business logic against the Rust core over gRPC.
+ * §11.1 module map. Auth, RBAC, realtime, trading, settings, stats and
+ * charts are real as of Phase 4 (see README's Phase 4 section for what's
+ * synthetic vs. real underneath each). Patterns, news, signals, agents,
+ * backtest, journal and system remain Phase 0 stubs — none of them are in
+ * §17's Phase 4 exit list ("Auth, overview, charts workspace, positions,
+ * kill switch, settings"); they need the agent layer (Phase 5) and/or the
+ * graph/knowledge store (Phase 6) to be meaningful.
  */
 @Module({
   imports: [

@@ -3,18 +3,23 @@
   "version": "0.1.0",
   "private": true,
   "description": "Reusable chart component library on TradingView Lightweight Charts v5 (§12.2). Phase 4 scope.",
-  "main": "src/index.ts",
-  "types": "src/index.ts",
+  "main": "dist/esm/index.js",
+  "types": "dist/esm/index.d.ts",
   "scripts": {
+    "build": "tsc -p tsconfig.json && tsc -p tsconfig.esm.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lint": "echo 'no lint config yet'"
+    "lint": "echo 'no lint config yet'",
+    "test": "vitest run"
   },
-  "dependencies": {},
   "devDependencies": {
+    "@types/react": "^19.0.0",
     "typescript": "^5.7.0",
-    "@types/react": "^19.0.0"
+    "vitest": "^5.0.0"
   },
   "peerDependencies": {
     "react": "^19.0.0"
+  },
+  "dependencies": {
+    "lightweight-charts": "^5.2.1"
   }
 }

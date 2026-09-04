@@ -1,14 +1,22 @@
 /// <reference lib="webworker" />
 
 /**
- * WS binary frames -> typed arrays via transferable ArrayBuffer (§12.2
- * performance technique #1: zero main-thread JSON parsing). Real MessagePack
- * decode wiring is Phase 4 scope, once packages/chart-engine exists.
+ * WS binary frames -> decoded objects, off the main thread (§12.2
+ * performance technique #1: zero main-thread MessagePack decoding). The
+ * incoming `ArrayBuffer` arrives transferred (no copy); the decoded object
+ * is structurally cloned back — the "transferable typed arrays" half of
+ * §12.2's description is future chart-engine work once a series consumer
+ * wants raw numeric buffers instead of plain objects.
  */
+import { decode } from "@msgpack/msgpack";
+
+import type { WsFrame } from "../lib/topic-multiplexer";
+
 declare const self: DedicatedWorkerGlobalScope;
 
-self.onmessage = () => {
-  // Phase 4: decode incoming ArrayBuffer frames and post back typed arrays.
+self.onmessage = (event: MessageEvent<ArrayBuffer>) => {
+  const frame = decode(new Uint8Array(event.data)) as WsFrame;
+  self.postMessage(frame);
 };
 
 export {};
