@@ -14,10 +14,17 @@ import json
 from pathlib import Path
 
 import onnxruntime as ort
+from agents_models.training import (
+    TrainConfig,
+    export_to_onnx,
+    make_synthetic_dataset,
+    raw_probability,
+    train_gbdt,
+)
 
-from agents_models.training import TrainConfig, export_to_onnx, make_synthetic_dataset, raw_probability, train_gbdt
-
-FIXTURE_DIR = Path(__file__).resolve().parents[5] / "crates" / "strategy" / "testdata" / "onnx_parity"
+FIXTURE_DIR = (
+    Path(__file__).resolve().parents[5] / "crates" / "strategy" / "testdata" / "onnx_parity"
+)
 N_FEATURES = 6
 N_SAMPLE_ROWS = 10
 
@@ -41,12 +48,16 @@ def main() -> None:
     outputs = session.run(None, {input_name: sample_inputs})
     onnx_probabilities = [row[1] for row in outputs[1]]
     for py_p, onnx_p in zip(python_probabilities, onnx_probabilities, strict=True):
-        assert abs(py_p - onnx_p) < 1e-6, f"onnxruntime disagrees with the Python model: {py_p} vs {onnx_p}"
+        msg = f"onnxruntime disagrees with the Python model: {py_p} vs {onnx_p}"
+        assert abs(py_p - onnx_p) < 1e-6, msg
 
     fixture = {
         "n_features": N_FEATURES,
         "rows": [
-            {"input": sample_inputs[i].tolist(), "expected_probability": float(python_probabilities[i])}
+            {
+                "input": sample_inputs[i].tolist(),
+                "expected_probability": float(python_probabilities[i]),
+            }
             for i in range(N_SAMPLE_ROWS)
         ],
     }

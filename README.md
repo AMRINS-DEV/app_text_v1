@@ -13,7 +13,7 @@ Python agent layer · NestJS gateway · Next.js 15 dashboard · Tauri 2 desktop 
 | 2 · Execution + Risk | In progress — see below |
 | 3 · Features + Model | In progress — see below |
 | 4 · Dashboard v1 | In progress — see below |
-| 5 · Agent layer | Not started |
+| 5 · Agent layer | In progress — see below |
 | 6 · Graph + Knowledge | Not started |
 | 7 · Validation | Not started |
 | 8 · Multi-platform | Not started |
@@ -271,13 +271,107 @@ and stay Phase 0 stubs here).
   §17's Phase 4 exit list and stays a Phase 0 stub — provider API keys tie
   to the agent layer (Phase 5) anyway.
 
+### Phase 5 — Agent layer (in progress)
+
+Scoped to §17's own Phase 5 exit row — "LLM router (4 providers), news/
+pattern/regime/critic agents, semantic cache, MCP servers | Signals
+published with TTL; cache hit ≥40%; cost under cap" — rather than the design
+doc's larger Prompt 6 wish list (LangGraph, `timeseries`/`graph` MCP
+servers, vision-agent/flow-agent, research-agent all need infrastructure or
+data this phase doesn't have and stay out of scope here).
+
+**Real and verified** (`services/agents/packages/{llm,core,regime,pattern,
+news,critic,mcp,orchestrator}`):
+
+- LLM providers (`agents-llm`): `OpenAIProvider`, `AnthropicProvider`,
+  `DeepSeekProvider`, `KimiProvider` build the exact real request shape and
+  parse the exact real response shape for each provider's actual API
+  (OpenAI Chat Completions, Anthropic Messages, OpenAI-compatible for
+  DeepSeek/Kimi) — verified with `httpx.MockTransport`, never a live network
+  call, API key, or real spend. Each provider carries a real circuit breaker
+  (3 consecutive failures → unhealthy for a 60s cooldown), verified with an
+  injected fake clock so the cooldown-then-recovery transition is actually
+  exercised, not assumed.
+- `LlmRouter`: capability-filtered fallback chain (vision/tools/ctx_len/
+  json_mode), per-provider and per-agent spend caps, an `asyncio.wait_for`
+  latency budget per candidate, and a full audit trail (prompt hash,
+  provider, model, tokens, cost, latency, cache hit, agent, signal ID) —
+  33 tests across fallback, capability filtering, circuit-breaker
+  integration, spend caps, and the audit log.
+- `SemanticCache` (§ L3a): bag-of-words cosine-similarity lookup ahead of
+  any provider call; its ≥40% hit-rate target is met against a workload
+  deliberately built from measured cosine similarities (near-duplicate
+  paraphrases + genuinely novel queries), not asserted against a workload
+  shaped to pass.
+- `structured_output.parse_structured`: JSON-parse + Pydantic-validate with
+  one retry-and-repair pass on malformed output.
+- Guardrails (§10.4, `agents_core.guardrails`): `implausible_levels` cross-
+  checks agent-claimed numeric levels against real OHLCV/ATR context
+  (>0.1 ATR mismatch discards the signal), `wrap_untrusted_text` isolates
+  news text as delimited data a prompt can never mistake for instructions,
+  `calibration_key` folds model version into the calibration key, and
+  `ModelVersionWeight` ramps a new model version's weight in over 30
+  resolved predictions rather than trusting it immediately.
+- `SignalBus` (§10.3): validates TTL, then `features_hash` against a
+  registered snapshot, then the calibrated probability range, in that
+  order, before a signal ever reaches fusion — agents hold zero
+  order-placement authority by construction, not by convention.
+- Agent roster (`AGENT_ROSTER`): `news-agent` (two-step triage → deep LLM
+  call gated on `impact_score ≥ 0.7`, discards hallucinated numeric levels
+  via the guardrail above), `pattern-agent` (real swing-point geometry
+  detecting double top/bottom, optional LLM narrative), `regime-agent` (see
+  the honest note below), `critic-agent` (approve/veto with an
+  `outcome_tracker` recording every veto for §10.1's weight-adjustment
+  measurement, whether or not anything gets published).
+- `Orchestrator` (`agents-orchestrator`): wires regime → {pattern, news} →
+  critic → `SignalBus` per bar; a `Flat`/zero-confidence proposal is each
+  agent's own "nothing to report" convention and is never even sent to the
+  critic — verified explicitly (`test_no_pattern_found_means_the_critic_is
+  _never_even_consulted`), not just assumed from the code path.
+- Two MCP tool servers (`agents-mcp`, the official `modelcontextprotocol`
+  Python SDK's `FastMCP`, pinned to `mcp<2` after a suspicious `2.1.1`
+  resolve pulled in forked sub-dependencies): `get_bars`, `get_trade_history`,
+  both against synthetic-but-deterministic data (a fixed reference instant,
+  never `time.time()`, following the same rule Phase 4's `StatsService` bug
+  taught).
+- Whole-workspace verification: 134 tests pass (`uv run pytest`), `ruff
+  check .` and `mypy packages/*/src` both clean.
+
+**Still stubbed / honestly out of reach here:**
+
+- No real LLM API keys, no live network calls, no real spend anywhere —
+  every provider is tested against its real request/response shape via
+  `httpx.MockTransport`, nothing more.
+- `regime-agent`'s classifier is k-means + a closed-form per-cluster
+  Gaussian, not a learned-transition HMM: `hmmlearn.GaussianHMM`'s
+  Baum-Welch EM reliably collapsed to a degenerate single dominant state on
+  this data shape, regardless of k-means-seeded means, manually seeded
+  covariances/transition matrix, or a tiny `min_covar` — verified via direct
+  diagnostic scripts that the synthetic data itself was well-separated
+  before concluding the fitting algorithm was the problem. Documented here
+  rather than silently swapped.
+- `vision-agent` and `flow-agent` remain `NotImplementedError` stubs (need a
+  chart-rendering pipeline and a live DOM feed respectively) and are
+  deliberately left out of `AGENT_ROSTER` rather than wired in to fail at
+  call time; `research-agent` is out of Phase 5 scope entirely.
+- No real NATS — agent-to-core signal delivery is in-process, the same
+  "real logic, mock infrastructure" split as every prior phase's
+  `SimBroker`/`InMemoryCoreClient`.
+- No real Qdrant — the semantic cache is in-process bag-of-words cosine
+  similarity, not a real embedding-based vector store.
+- Not LangGraph — the orchestrator is a plain async pipeline; see its own
+  module doc comment for why that's a deliberate scoping decision against
+  §17's actual Phase 5 exit criteria, not a shortcut.
+- The `timeseries` (QuestDB) and `graph` (FalkorDB, §7.2) MCP servers need
+  infrastructure this sandbox doesn't have and are Phase 6+ scope, same as
+  `crates/storage`.
+
 ### Everything else
 
 - The Tauri desktop shell (`apps/desktop`) is a file-structure stub; building
   the actual GUI needs system webview dependencies not available here.
-- No live broker connection and no real LLM provider calls are wired up
-  anywhere in this repo — `LlmProvider` implementations in
-  `services/agents/packages/llm` are interface-complete stubs.
+- No live broker connection is wired up anywhere in this repo — every
+  provider/bridge above is real logic against mock infrastructure.
 - `crates/indicators` (O(1) EMA/ATR/RSI, §8.1) is real and unit-tested
   since Phase 0.
 

@@ -1,9 +1,9 @@
 [project]
 name = "agents-regime"
 version = "0.1.0"
-description = "regime-agent (§10.1): feature vector, cross-asset -> regime label + posterior probabilities. HMM/GBDT, no LLM. Phase 3/5 scope."
+description = "regime-agent (§10.1): feature vector, cross-asset -> regime label + posterior probabilities. A k-means-seeded Gaussian classifier, no LLM."
 requires-python = ">=3.11"
-dependencies = ["agents-core"]
+dependencies = ["agents-core", "numpy>=2.0", "scikit-learn>=1.5"]
 
 [tool.uv.sources]
 agents-core = { workspace = true }

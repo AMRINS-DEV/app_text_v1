@@ -31,9 +31,16 @@ class AgentOutput(BaseModel):
 class BaseAgent(ABC):
     """Subclasses implement `run`; publishing to NATS, isotonic calibration
     (§10.4) and the Brier-score weight tracker (§8.4) are handled by the
-    orchestrator (Phase 5), not by individual agents."""
+    orchestrator, not by individual agents.
+
+    `run` is `async` uniformly across the whole roster, even for agents
+    (regime, pattern) whose own logic never awaits anything — LLM-backed
+    agents (news, critic) genuinely need to await a network call, and one
+    interface both kinds of agent satisfy is simpler for the orchestrator
+    than dispatching sync vs. async agents differently. A synchronous
+    agent's `run` body just never has an `await` in it, which is valid."""
 
     kind: str
 
     @abstractmethod
-    def run(self, agent_input: AgentInput) -> AgentOutput: ...
+    async def run(self, agent_input: AgentInput) -> AgentOutput: ...

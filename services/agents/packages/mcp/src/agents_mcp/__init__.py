@@ -1,5 +1,21 @@
-"""MCP tool servers (§3.2, §7). Four servers planned: market-data,
-timeseries, graph (FalkorDB queries from §7.2), journal. Phase 5/6 scope."""
+"""MCP tool servers (§3.2, §7). `market` and `journal` are real (see
+`server.py`, `synthetic_data.py`); `timeseries` and `graph` need
+QuestDB/FalkorDB and remain Phase 6+ scope.
+"""
 
-SERVER_NAMES = ("market", "timeseries", "graph", "journal")
-"""Names only for Phase 0 — each becomes a real MCP server module in Phase 5/6."""
+from .server import get_bars, get_trade_history, mcp
+from .synthetic_data import Bar, ClosedTrade, generate_bars, generate_trade_history
+
+SERVER_NAMES = ("market", "journal")
+"""`timeseries` and `graph` are still names-only — Phase 6+ scope."""
+
+__all__ = [
+    "SERVER_NAMES",
+    "mcp",
+    "get_bars",
+    "get_trade_history",
+    "Bar",
+    "ClosedTrade",
+    "generate_bars",
+    "generate_trade_history",
+]

@@ -7,5 +7,5 @@ from agents_core import AgentInput, AgentOutput, BaseAgent
 class FlowAgent(BaseAgent):
     kind = "flow-agent"
 
-    def run(self, agent_input: AgentInput) -> AgentOutput:
+    async def run(self, agent_input: AgentInput) -> AgentOutput:
         raise NotImplementedError("FlowAgent is Phase 3/5 scope")

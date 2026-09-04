@@ -1,12 +1,13 @@
 [project]
 name = "agents-news"
 version = "0.1.0"
-description = "Ingest -> NER -> impact scoring -> graph (§10.1). Phase 5 scope; real deps (feed parsers, an NER model) land then to keep Phase 0's `uv sync` light."
+description = "news-agent (§10.1): LLM triage/deep analysis -> structured NewsEvent. Graph ingest (§7) is Phase 6 scope, once FalkorDB exists."
 requires-python = ">=3.11"
-dependencies = ["agents-core"]
+dependencies = ["agents-core", "agents-llm"]
 
 [tool.uv.sources]
 agents-core = { workspace = true }
+agents-llm = { workspace = true }
 
 [build-system]
 requires = ["hatchling"]

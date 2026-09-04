@@ -1,9 +1,9 @@
 [project]
 name = "agents-llm"
 version = "0.1.0"
-description = "Multi-provider LLM router (§10.2): capability matching, cost/latency budgets, circuit breaking, semantic caching. Provider adapters are interface-complete stubs — no real API calls (Phase 0)."
+description = "Multi-provider LLM router (§10.2): capability matching, cost/latency budgets, circuit breaking, semantic caching, real provider adapters (Phase 5)."
 requires-python = ">=3.11"
-dependencies = ["pydantic>=2.9"]
+dependencies = ["pydantic>=2.9", "httpx>=0.27"]
 
 [build-system]
 requires = ["hatchling"]

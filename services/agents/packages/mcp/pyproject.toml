@@ -1,9 +1,9 @@
 [project]
 name = "agents-mcp"
 version = "0.1.0"
-description = "MCP servers exposing market-data, timeseries, graph and journal tools — same tools usable from Claude Desktop for manual research (§3.2). Phase 5/6 scope; real dependency on the `mcp` SDK added then."
+description = "MCP servers exposing market-data and journal tools — same tools usable from Claude Desktop for manual research (§3.2). timeseries/graph tools need QuestDB/FalkorDB (Phase 6+)."
 requires-python = ">=3.11"
-dependencies = ["agents-core"]
+dependencies = ["agents-core", "mcp<2"]
 
 [tool.uv.sources]
 agents-core = { workspace = true }

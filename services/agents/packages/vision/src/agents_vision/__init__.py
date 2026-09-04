@@ -7,5 +7,5 @@ from agents_core import AgentInput, AgentOutput, BaseAgent
 class VisionAgent(BaseAgent):
     kind = "vision-agent"
 
-    def run(self, agent_input: AgentInput) -> AgentOutput:
+    async def run(self, agent_input: AgentInput) -> AgentOutput:
         raise NotImplementedError("VisionAgent is Phase 5 scope")
