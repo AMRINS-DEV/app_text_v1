@@ -25,12 +25,17 @@ pub struct ReplayDecision {
 
 pub fn run_deterministic_pipeline(ticks: &[Tick], symbol_id: SymbolId, timeframe_seconds: u32) -> Vec<ReplayDecision> {
     let mut bars = BarAggregator::new(symbol_id, timeframe_seconds);
-    let mut feature_engine = FeatureEngine::new(3, 10);
+    let mut feature_engine = FeatureEngine::with_ema_periods(3, 10);
     let mut decisions = Vec::new();
 
     for tick in ticks {
-        let snapshot = feature_engine.on_tick(tick);
+        feature_engine.on_tick(tick); // updates tick-driven state (EMA cross, spread, VWAP)
         if let Some(closed) = bars.on_tick(tick) {
+            // Bar-driven features (ATR/ADX/Bollinger/.../Phase 3) update on
+            // close; the placeholder signal rule below still only reads
+            // the tick-driven EMA cross, unchanged from Phase 0/1, so this
+            // module's determinism tests keep testing the same property.
+            let snapshot = feature_engine.on_bar_close(&closed);
             let lots = match (snapshot.ema_fast, snapshot.ema_slow) {
                 (Some(fast), Some(slow)) if fast > slow => kelly_lots(KellyInputs {
                     probability: 0.58,

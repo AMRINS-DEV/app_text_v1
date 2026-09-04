@@ -46,14 +46,16 @@ fn main() {
     tracing::info!(strategy_id = %cfg.id, "loaded strategy config");
 
     let mut bars = BarAggregator::new(1, 1); // 1-second bars for the demo
-    let mut features = FeatureEngine::new(3, 10);
+    let mut features = FeatureEngine::with_ema_periods(3, 10);
 
     for tick in simulated_ticks() {
         if let Some(closed) = bars.on_tick(&tick) {
             tracing::info!(?closed, "bar closed");
+            let snapshot = features.on_bar_close(&closed);
+            tracing::debug!(?snapshot, "feature snapshot (bar-driven)");
         }
         let snapshot = features.on_tick(&tick);
-        tracing::debug!(?snapshot, "feature snapshot");
+        tracing::debug!(?snapshot, "feature snapshot (tick-driven)");
     }
 
     // Proves risk sizing wiring against a plausible calibrated signal — not
