@@ -1,9 +1,16 @@
 [project]
 name = "agents-models"
 version = "0.1.0"
-description = "Training, calibration, ONNX export (§8.2-8.3, §15). Real dependencies (lightgbm, torch, scikit-learn) land in Phase 3 — kept out of Phase 0's `uv sync` to avoid multi-GB downloads for a scaffold."
+description = "Training, calibration, ONNX export (§8.2-8.3, §15)."
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "numpy>=2.0",
+    "scikit-learn>=1.5",
+    "lightgbm>=4.5",
+    "onnxmltools>=1.13",
+    "onnx>=1.17",
+    "onnxruntime>=1.19",
+]
 
 [build-system]
 requires = ["hatchling"]

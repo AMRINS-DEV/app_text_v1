@@ -4,11 +4,14 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 publish.workspace = true
-description = "Strategy VM: declarative YAML configs (§5.5) compiled to a decision tree, plus signal fusion (§8.4)."
+description = "Strategy VM: declarative YAML configs (§5.5) compiled to a decision tree, plus signal fusion (§8.4) and ONNX inference (§3.2, §17 Phase 3)."
 
 [dependencies]
 domain.workspace = true
 serde.workspace = true
 serde_yaml.workspace = true
+thiserror.workspace = true
+ort = "2.0.0-rc.13"
 
 [dev-dependencies]
+serde_json.workspace = true

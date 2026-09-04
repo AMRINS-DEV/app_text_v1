@@ -11,7 +11,7 @@ Python agent layer · NestJS gateway · Next.js 15 dashboard · Tauri 2 desktop 
 | 0 · Foundation | Done |
 | 1 · Bridge + Core | In progress — tick path done, order path partially blocked (see below) |
 | 2 · Execution + Risk | In progress — see below |
-| 3 · Features + Model | Not started |
+| 3 · Features + Model | In progress — see below |
 | 4 · Dashboard v1 | Not started |
 | 5 · Agent layer | Not started |
 | 6 · Graph + Knowledge | Not started |
@@ -113,6 +113,62 @@ separate flat encoding for orders first (see `docs/protocol.md`'s
 static), the strategy VM's real decision tree (still §5.5 config parsing +
 a placeholder EMA-cross rule from Phase 0/1), and everything that needs a
 trained model or real feature vector (Phase 3).
+
+### Phase 3 — Features + Model (in progress)
+
+**Real and verified** (`crates/indicators`, `crates/features`,
+`services/agents/packages/models`, `crates/strategy`):
+
+- Six new O(1) incremental indicators beyond Phase 0's EMA/ATR/RSI:
+  Bollinger Bands, Donchian channels, Efficiency Ratio, ADX, swing-point
+  detection, and rolling VWAP — each backed by the new `SumRing`/
+  `MinMaxRing` primitives (`crates/indicators::ring`, a running-sum and a
+  monotonic-deque sliding window) so none of them are O(n) per update.
+  Order-flow/liquidity/cross-asset/news/positioning indicators remain
+  explicitly out of scope — they need external data feeds this environment
+  doesn't have (documented in `crates/indicators::lib`, not silently
+  dropped).
+- `FeatureEngine` (`crates/features`) rewritten around the expanded
+  indicator set into a single `FeatureSnapshot` per bar close, wired
+  through `crates/replay::pipeline` and `tradeos-core`'s live path.
+- Purged K-fold + embargo and walk-forward window splitting
+  (`services/agents/packages/models::cross_validation`, §8.7's overfitting
+  defenses) — pure functions over integer bar indices, unit-tested
+  including a real embargo-vs-overlap boundary bug caught and fixed during
+  development (a closed-interval label window touching a test fold's last
+  bar must purge even with zero embargo; the fix corrected both the
+  implementation's docstring and the test that had conflated the two
+  effects).
+- A real GBDT training pipeline (`agents_models.training`): LightGBM →
+  isotonic calibration (`agents_models.calibration`, out-of-bounds clipped
+  to `[eps, 1-eps]`) → Brier score / reliability diagram / Expected
+  Calibration Error / max calibration gap, the exact metric set §8.3 asks
+  for. Trained on a synthetic (not market) dataset — there is no real
+  historical tick archive in this environment, called out here rather than
+  implied otherwise.
+- ONNX export (`onnxmltools.convert_lightgbm`) and real Rust inference
+  (`crates/strategy::onnx_model`, via the `ort` crate) reading that exact
+  file — the §17 Phase 3 exit criterion, "ONNX export with a parity test
+  asserting Rust `ort` inference matches Python within 1e-6," passes for
+  real: `crates/strategy/tests/onnx_parity.rs` checks 10 rows against a
+  committed fixture (`crates/strategy/testdata/onnx_parity/`) generated and
+  self-verified by
+  `services/agents/packages/models/scripts/generate_onnx_fixture.py`, and
+  matches to bit-for-bit float precision, well inside the 1e-6 budget.
+
+**Still stubbed:**
+
+- The training data is synthetic, not market data — there is no ingested
+  tick/bar history to train against in this environment. The pipeline
+  itself (splitting, training, calibration, export, inference) is real;
+  what it's trained on is not.
+- The strategy VM's real decision tree (compiling §5.5 YAML into a <5µs
+  execution path) and real log-odds signal fusion (§8.4, beyond the
+  existing placeholder weighted average) still need a live feature engine
+  and calibrated multi-agent signals feeding them to be meaningful — Phase
+  5 scope once the agent layer exists.
+- `crates/storage` remains a trait-shaped stub pending a real QuestDB/
+  Postgres.
 
 ### Everything else
 
