@@ -10,7 +10,7 @@ Python agent layer · NestJS gateway · Next.js 15 dashboard · Tauri 2 desktop 
 |---|---|
 | 0 · Foundation | Done |
 | 1 · Bridge + Core | In progress — tick path done, order path partially blocked (see below) |
-| 2 · Execution + Risk | Not started |
+| 2 · Execution + Risk | In progress — see below |
 | 3 · Features + Model | Not started |
 | 4 · Dashboard v1 | Not started |
 | 5 · Agent layer | Not started |
@@ -66,8 +66,53 @@ separate flat encoding for orders first (see `docs/protocol.md`'s
   order-accepting half is intentionally unwritten (see above).
 - Reconnect-with-resync on the adapter side — Phase 2 scope, and only
   testable against a real EA that can actually disconnect.
-- `crates/risk::guards`, `crates/execution`, `crates/storage` — trait-shaped
-  stubs for Phase 2.
+- `crates/storage` — trait-shaped stub; needs a real QuestDB/Postgres to be
+  meaningful (Phase 3+).
+
+### Phase 2 — Execution + Risk (in progress)
+
+**Real and verified** (`crates/execution`, `crates/risk`):
+
+- `SimBroker` (`crates/execution::sim_broker`) — a real `domain::Broker`
+  implementation with configurable reject/requote/partial-fill probability
+  (seedable for reproducible tests, plus a `force_next_rejects` hook for
+  deterministic guard testing) — the doc's own Prompt 4 ask.
+- `OrderRouter` (`crates/execution::router`) — enforces atomic SL/TP at
+  submission (§9.3: never a follow-up modify) and idempotent resubmission
+  correctly (a client_id that already *succeeded* is never resubmitted; one
+  that only failed can still be retried — an easy trap this router's own
+  tests catch).
+- `domain::Broker` gained a `positions()` method and `PositionSnapshot`
+  type — the §9.5 position-reconciliation guard has nothing to compare
+  against without it, so this was a real trait gap, not a stub.
+- All ten §9.5 safety guards (`crates/risk::guards`), each a small real
+  state machine with its own unit tests: daily drawdown, max drawdown
+  (manual re-arm only), consecutive losses (reduce size, 2 wins to
+  restore), data staleness, clock skew, spread spike (rolling median),
+  reject storm (time-boxed circuit breaker), agent unavailability (reduce
+  size), kill switch, and position reconciliation.
+- Exit management (`crates/risk::exits`, §9.3): stop-distance formula
+  (widest of ATR/structure/broker-minimum), chandelier trailing that only
+  ever ratchets tighter, breakeven that never undercuts real spread+
+  commission cost, time stops.
+- Quick-profit (`crates/risk::quick_profit`, §9.4): the gated partial
+  scale-out rule plus the shadow A/B tracker the doc mandates —
+  `should_recommend_disabling()` implements "if the delta is negative for
+  100+ trades" verbatim.
+- Soak test (`crates/execution/tests/soak.rs`): 20,000 randomized
+  submit/modify/partial-close/full-close cycles through the real
+  `OrderRouter`+`SimBroker`, with a local position book maintained purely
+  from the `ExecEvent` stream (the way a real core would), reconciled
+  every cycle — zero spurious divergence. A second test deliberately
+  corrupts the local book and confirms the same guard reliably catches
+  it — proving the guard can trip, not just proving it usually doesn't.
+  This is the practical stand-in for "72h soak" in an environment with no
+  72-hour live feed to run against.
+
+**Still stubbed:** live P&L/margin accounting in `SimBroker` (equity is
+static), the strategy VM's real decision tree (still §5.5 config parsing +
+a placeholder EMA-cross rule from Phase 0/1), and everything that needs a
+trained model or real feature vector (Phase 3).
 
 ### Everything else
 
@@ -76,8 +121,8 @@ separate flat encoding for orders first (see `docs/protocol.md`'s
 - No live broker connection and no real LLM provider calls are wired up
   anywhere in this repo — `LlmProvider` implementations in
   `services/agents/packages/llm` are interface-complete stubs.
-- `crates/indicators` (O(1) EMA/ATR/RSI, §8.1) and `crates/risk::sizing`
-  (fractional-Kelly, §9.2) are real and unit-tested since Phase 0.
+- `crates/indicators` (O(1) EMA/ATR/RSI, §8.1) is real and unit-tested
+  since Phase 0.
 
 ## Layout
 

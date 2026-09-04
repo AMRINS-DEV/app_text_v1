@@ -43,6 +43,18 @@ pub struct AccountSnapshot {
     pub free_margin: i64,
 }
 
+/// One open position as the broker itself reports it — the "ground truth"
+/// side of position reconciliation (§9.5: "Compare local position book vs
+/// broker; any divergence → halt + alert"). Without this, reconciliation
+/// has nothing to compare the local book *against*.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct PositionSnapshot {
+    pub broker_order_id: BrokerOrderId,
+    pub symbol_id: SymbolId,
+    pub qty: i64,
+    pub avg_price: i64,
+}
+
 #[derive(Debug, thiserror::Error)]
 pub enum PortError {
     #[error("not connected")]
@@ -74,4 +86,9 @@ pub trait Broker: Send {
     fn poll_event(&mut self) -> Option<ExecEvent>;
     fn account(&self) -> AccountSnapshot;
     fn constraints(&self, sym: SymbolId) -> Result<SymbolConstraints>;
+    /// Every open position, as the broker reports it right now. The §9.5
+    /// position-reconciliation guard polls this every 5s and compares it
+    /// against the core's own local book — this method existing is what
+    /// makes that comparison possible at all, not an optional extra.
+    fn positions(&self) -> Result<Vec<PositionSnapshot>>;
 }

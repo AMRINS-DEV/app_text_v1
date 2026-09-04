@@ -40,4 +40,7 @@ impl Broker for BinanceBroker {
     fn constraints(&self, _sym: SymbolId) -> Result<SymbolConstraints> {
         Err(PortError::NotConnected)
     }
+    fn positions(&self) -> Result<Vec<domain::PositionSnapshot>> {
+        Err(PortError::NotConnected)
+    }
 }

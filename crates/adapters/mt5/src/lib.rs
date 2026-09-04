@@ -248,4 +248,9 @@ impl Broker for Mt5Broker {
         // Needs a SymbolInfo query message added to protocol.rs — Phase 2 scope.
         Err(PortError::Unsupported)
     }
+
+    fn positions(&self) -> Result<Vec<domain::PositionSnapshot>> {
+        // Needs a PositionInfo query message added to protocol.rs — Phase 2 scope.
+        Err(PortError::Unsupported)
+    }
 }
