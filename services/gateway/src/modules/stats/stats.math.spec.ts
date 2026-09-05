@@ -16,6 +16,13 @@ describe("equityCurveFrom", () => {
     expect(curve).toHaveLength(1);
     expect(curve[0].equity).toBe(1_000);
   });
+
+  it("never emits two points with the same timestamp (chart-engine requires strictly ascending time)", () => {
+    const curve = equityCurveFrom(tradesFrom([100, -50, 25]), 1_000);
+    for (let i = 1; i < curve.length; i++) {
+      expect(curve[i].t).toBeGreaterThan(curve[i - 1].t);
+    }
+  });
 });
 
 describe("maxDrawdownPct", () => {

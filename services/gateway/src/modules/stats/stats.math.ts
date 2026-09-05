@@ -6,7 +6,14 @@ export interface EquityPoint {
 }
 
 export function equityCurveFrom(trades: readonly ClosedTrade[], startingEquity: number): EquityPoint[] {
-  const curve: EquityPoint[] = [{ t: trades[0]?.closedAt ?? Date.now(), equity: startingEquity }];
+  // The synthetic starting point must be strictly *before* the first
+  // trade, not at the same instant — a real bug found while manually
+  // verifying the Phase 6 dashboard pages: chart-engine's `ChartHost`
+  // asserts strictly-ascending, duplicate-free timestamps, and reusing
+  // `trades[0].closedAt` here made points[0] and points[1] identical,
+  // crashing every render of the overview page's equity curve.
+  const firstTradeTime = trades[0]?.closedAt ?? Date.now();
+  const curve: EquityPoint[] = [{ t: firstTradeTime - 1, equity: startingEquity }];
   let equity = startingEquity;
   for (const trade of trades) {
     equity += trade.pnl;

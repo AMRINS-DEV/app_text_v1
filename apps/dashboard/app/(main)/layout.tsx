@@ -9,6 +9,8 @@ import { useAuthStore } from "../../stores/auth";
 const NAV_ITEMS = [
   { href: "/", label: "Overview" },
   { href: "/charts", label: "Charts" },
+  { href: "/patterns", label: "Patterns" },
+  { href: "/news", label: "News" },
   { href: "/trading", label: "Trading" },
   { href: "/settings", label: "Settings" },
 ];

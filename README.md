@@ -14,7 +14,7 @@ Python agent layer · NestJS gateway · Next.js 15 dashboard · Tauri 2 desktop 
 | 3 · Features + Model | In progress — see below |
 | 4 · Dashboard v1 | In progress — see below |
 | 5 · Agent layer | In progress — see below |
-| 6 · Graph + Knowledge | Not started |
+| 6 · Graph + Knowledge | In progress — see below |
 | 7 · Validation | Not started |
 | 8 · Multi-platform | Not started |
 | 9 · Scale | Not started |
@@ -362,9 +362,131 @@ news,critic,mcp,orchestrator}`):
 - Not LangGraph — the orchestrator is a plain async pipeline; see its own
   module doc comment for why that's a deliberate scoping decision against
   §17's actual Phase 5 exit criteria, not a shortcut.
-- The `timeseries` (QuestDB) and `graph` (FalkorDB, §7.2) MCP servers need
-  infrastructure this sandbox doesn't have and are Phase 6+ scope, same as
-  `crates/storage`.
+- The `timeseries` (QuestDB) MCP server needs infrastructure this sandbox
+  doesn't have and remains Phase 6+ scope, same as `crates/storage`. The
+  `graph` MCP server is real as of Phase 6 — see below.
+
+### Phase 6 — Graph + Knowledge (in progress)
+
+Scoped to §17's own Phase 6 exit row — "FalkorDB schema, ingest pipeline,
+priors into fusion, news & pattern pages | Conditional-reliability query
+< 50ms; priors measurably improve expectancy" — using the same real-logic/
+mock-infrastructure split as every prior phase: no Docker daemon exists in
+this sandbox to run a real FalkorDB, so the graph layer's schema and query
+semantics are real, exercised against an in-memory engine that stands in
+for it (documented in `agents_graph.store`'s own doc comment) — the same
+substitution this project already made for `hmmlearn` in Phase 5's regime
+classifier.
+
+**Real and verified** (`crates/strategy::fusion`, `services/agents/packages/
+graph`, `services/agents/packages/mcp`, `services/gateway/src/modules/
+{patterns,news}`, `apps/dashboard/app/(main)/{patterns,news}`):
+
+- Real §8.4 log-odds signal fusion (`crates/strategy::fusion`), replacing
+  the placeholder weighted average every prior phase carried forward:
+  `logit(P_fused) = Σ w_i·logit(P_i) − λ·Σ_{i<j} ρ_ij·|logit(P_i)|·|logit(P_j)|`,
+  with `BrierTracker`'s online Brier Skill Score for `w_i` and
+  `PairwiseCorrelationTracker`'s online Pearson correlation for `ρ_ij` —
+  both real streaming statistics, not placeholders. A dedicated test
+  (`a_well_evidenced_graph_prior_changes_the_expectancy_gate_decision`)
+  demonstrates the Phase 6 exit criterion directly: fusing two weak,
+  near-coin-flip agent signals alone produces a probability that fails
+  §8.5's `p_min_mode = 0.55` gate; adding a well-evidenced graph prior
+  (§7.2's conditional-reliability output) pushes the same fusion over that
+  gate — priors measurably changing the actual trade decision, not just a
+  number moving in the right direction.
+- The §7.1 knowledge graph schema (`agents_graph.schema`): every node label
+  (Instrument, NewsEvent, EventType, Pattern, PatternInst, MarketRegime,
+  Outcome, Trade, Session, Concept) and relationship from the design doc's
+  own Cypher, as typed builders over a plain `Node`/`Edge` pair.
+- `KnowledgeGraph` (`agents_graph.store`): an indexed, idempotent-by-id
+  in-memory graph engine — `upsert_node`/`upsert_edge` are real `MERGE`
+  semantics, and node/edge lookups are O(1) dict indices, not a scan (the
+  property that makes the latency benchmark below meaningful).
+- Ingest pipelines and automatic outcome resolution (`agents_graph.ingest`,
+  `.outcomes`): real functions turning agent-shaped output into graph
+  nodes/edges, and two real barrier-walk resolvers — `resolve_pattern_
+  outcome` (the same triple-barrier shape as `agents_models.labeling.
+  triple_barrier`, generalized to asymmetric, direction-aware target/
+  invalidation levels — real CONFIRMED/FAILED/TIMEOUT verdicts computed
+  from actual subsequent OHLC, the same computation §12.3's "honest
+  track-record generator" describes) and `resolve_fixed_horizon_move`
+  (§7.2 query #2's fixed-horizon news-impact measurement).
+- The exact §7.2 queries (`agents_graph.queries`) as real traversal/
+  aggregation logic against `KnowledgeGraph`'s indexed adjacency:
+  conditional reliability (query #1, including `percentileCont`'s
+  linear-interpolation median, matching openCypher's own definition),
+  news impact persistence bucketed by quarter (query #2), and confluence
+  discovery gated at `n >= 40` (query #3) — every result reports its own
+  `n` rather than silently hiding an under-powered sample.
+- The §17 exit benchmark: `conditional_reliability` measured at ~26ms
+  against 100k pattern instances (~400k edges) — honestly scaled down from
+  the design doc's 10M-edge target (this sandbox can't synthesize and hold
+  that much data), with the scaling argument made explicit in the test's
+  own doc comment: the query's cost is O(matching instances via indexed
+  lookups), not O(total graph size), so a smaller-N benchmark is a
+  legitimate proxy rather than an unrelated number.
+- A backfill script (`agents_graph.backfill`) generating deterministic
+  synthetic historical news and patterns (fixed reference instant, seeded
+  `random.Random` — never `time.time()`), seeded so `double_top` has a
+  genuinely higher hit rate than `double_bottom`, giving the queries above
+  something real, if synthetic, to discover.
+- A third MCP tool server, `graph` (`agents_mcp.server`, alongside the
+  Phase 5 `market`/`journal` tools in the same process): `get_pattern_
+  reliability`, `get_news_impact_stability`, `get_confluence`, all backed
+  by the backfilled `KnowledgeGraph` above.
+- Gateway `patterns`/`news` modules (`services/gateway/src/modules/
+  {patterns,news}`), fleshed out from Phase 0's empty stubs: real
+  TypeScript reimplementations of the same barrier-walk/fixed-horizon
+  resolvers and conditional-reliability/impact-stability aggregations
+  (there's no live cross-language bridge from this NestJS process to the
+  Python agent layer in this sandbox, the same split as the Rust domain
+  types and their Zod mirrors in `packages/schemas`), exposed as
+  `GET /api/patterns`, `GET /api/patterns/prior`, `GET /api/news`, and
+  `GET /api/news/impact-stability`.
+- Dashboard `patterns`/`news` pages (§12.3, §12.4), replacing Phase 0's
+  placeholder text: pattern cards with kind/symbol/regime/confidence, a
+  computed CONFIRMED/FAILED/TIMEOUT verdict and R-multiple, and the
+  historical prior line per pattern kind; a news timeline with realized-
+  direction/move data and a quarter-bucketed impact-stability table.
+  Verified end-to-end in a real browser (login → TOTP → Patterns → News
+  against a live gateway), which caught and fixed a real, previously
+  dormant bug found only by actually rendering the Overview page along
+  the way: `stats.math.ts`'s `equityCurveFrom` reused the first trade's
+  own timestamp as the synthetic curve's starting point, so the first two
+  points were always identical — harmless until `chart-engine`'s
+  `ChartHost.setLine` (which requires strictly ascending, duplicate-free
+  timestamps) actually rendered it, at which point it crashed the whole
+  page. Fixed by placing the starting point 1ms before the first trade,
+  with a regression test. The sidebar nav also never linked to Patterns/
+  News (a Phase 4 leftover from when they were empty stubs) — added.
+
+**Still stubbed / honestly out of reach here:**
+
+- No real FalkorDB — see `agents_graph.store`'s own doc comment; the
+  schema and query semantics are real, the storage engine underneath is
+  not the one the design doc names. `KnowledgeGraph` is dependency-
+  injectable behind the same interface, so a real FalkorDB-backed
+  implementation (via `redis`'s `GRAPH.QUERY`) can replace it later
+  without touching any ingest/query caller.
+- No real cross-language bridge: the gateway's `patterns`/`news` modules
+  reimplement the same real algorithms independently in TypeScript rather
+  than calling the Python `agents_graph`/MCP layer over the network — the
+  same duplication the Rust domain types and TS Zod schemas already
+  accept elsewhere in this repo.
+- §12.4's Cytoscape/Sigma.js graph explorer needs a graph query API
+  exposed over HTTP from the gateway, which doesn't exist yet (the real
+  graph queries live behind Python's MCP tools in this phase) — Phase 7+
+  scope.
+- §12.3's live "detect" job trigger and `packages/chart-engine`'s
+  `PatternOverlay` series primitive (rendering pattern geometry directly
+  on a live chart) need a live agent bridge and are Phase 7+ scope; the
+  patterns page here reads pre-resolved history, it doesn't trigger new
+  detection.
+- `crates/strategy`'s decision tree compilation (§5.5, <5µs) is still the
+  only piece of the strategy VM left unreal — fusion is the last of the
+  three components (config parsing, ONNX inference, fusion) called out in
+  `lib.rs`'s own doc comment across Phases 0/3/6.
 
 ### Everything else
 
