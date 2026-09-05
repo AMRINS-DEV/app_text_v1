@@ -15,7 +15,7 @@ Python agent layer · NestJS gateway · Next.js 15 dashboard · Tauri 2 desktop 
 | 4 · Dashboard v1 | In progress — see below |
 | 5 · Agent layer | In progress — see below |
 | 6 · Graph + Knowledge | In progress — see below |
-| 7 · Validation | Not started |
+| 7 · Validation | In progress — see below |
 | 8 · Multi-platform | Not started |
 | 9 · Scale | Not started |
 
@@ -487,6 +487,120 @@ graph`, `services/agents/packages/mcp`, `services/gateway/src/modules/
   only piece of the strategy VM left unreal — fusion is the last of the
   three components (config parsing, ONNX inference, fusion) called out in
   `lib.rs`'s own doc comment across Phases 0/3/6.
+
+### Phase 7 — Validation (in progress)
+
+Scoped to §17's own Phase 7 exit row — "Walk-forward, paper trading,
+calibration monitoring | 60-day paper expectancy within 1 SE of backtest" —
+not §19 Prompt 12's much larger observability wish list (a live dashboard
+panel, alerting integrations, a scaling-decision UI) or §15's full 8-item
+pre-launch checklist, the same roadmap-row-not-generation-prompt scoping
+every prior phase used. A new package, `services/agents/packages/
+validation` (`agents_validation`), is the first place in the whole project
+that wires Phase 3's previously disjoint building blocks — `agents_models.
+labeling.triple_barrier`, `.cross_validation`'s purged/embargoed walk-
+forward splitter, and `.calibration`'s isotonic calibrator + Brier/ECE —
+into an actual time-ordered backtest.
+
+Two deliberate substitutions, both argued the same way Phase 6 argued away
+LangGraph and FalkorDB:
+
+- **Not NautilusTrader** (the specific engine §15 names): this project
+  already built its own simulated-execution stack in Phase 2 (`SimBroker`,
+  `OrderRouter`, `crates/risk`'s Kelly sizing and guard suite) purpose-built
+  for exactly this job. A second, unrelated backtesting framework would
+  bypass everything Phases 1-6 built and reimplement the same trade logic a
+  second time, disconnected from the Rust engine — so `agents_validation.
+  backtest` is this project's own §8.5 expectancy-gate runner instead.
+  "Realistic costs" (§15 item 3) are a fixed cost-in-R constant, the same
+  cost ceiling §8.5's own formula already accounts for, not a market-impact
+  model.
+- **No real 60-day paper trading run.** This is a different category of gap
+  from every other "we don't have real X" limitation in this project: it
+  needs elapsed real calendar time against a live feed, and no amount of
+  engineering effort — mock or otherwise — can make real time pass inside a
+  coding session. What §15 actually checks is a *statistical property* (does
+  forward performance track backtest performance), and Phase 2's 72-hour
+  soak test already established this project's answer to exactly this shape
+  of requirement: simulate the property via an accelerated, compressed-time
+  run rather than literally waiting. `agents_validation.paper_trading` fits
+  a final model on a prefix of the synthetic series, then runs the real
+  backtest logic over a trailing range that training and calibration never
+  saw at all — an honest accelerated stand-in for a live paper-trading
+  period, never claimed as an actual 60-day run.
+
+**Real and verified** (`services/agents/packages/validation`, 56 tests, ruff/
+mypy clean):
+
+- `dataset.generate_labeled_series`: a synthetic price series with real,
+  triple-barrier-resolved labels — the first dataset in the project needing
+  *persistent*, multi-bar predictive signal rather than a single-step
+  nudge, because a label resolves over up to `max_bars` future bars. Built
+  around an AR(1) latent "regime" process driving returns over many
+  consecutive bars, with one feature column a noisy readout of that same
+  regime; an i.i.d.-per-bar version tried first produced no measurable
+  signal at all (confirmed empirically, not assumed). A second empirical
+  fix was needed for the ATR-proxy barrier distance: at the raw scale,
+  crossing a barrier took only 2-5 bars regardless of noise level (a
+  scale-invariant consequence of diffusion), making TIMEOUT essentially
+  impossible — fixed with an empirically tuned 4x scale factor found via a
+  parameter sweep, producing a genuine three-way WIN/LOSS/TIMEOUT mix.
+- `backtest.run_backtest`: the exact §8.5 expectancy gate —
+  `E[R] = p·R_target − (1−p)·1.0 − c`, gated on a cost ceiling
+  (`c ≤ 0.10·R_target`), a minimum probability, and `E[R] ≥ θ` — connecting
+  a calibrated probability stream to real triple-barrier trade outcomes for
+  the first time anywhere in the project.
+- `walk_forward.run_walk_forward`: per-window train → calibrate → backtest,
+  correctly enforcing that the calibrator is fit only on a held-out
+  validation slice (never the GBDT's own training data) and that the
+  backtest only ever runs on each window's genuinely out-of-sample test
+  range.
+- `statistics.deflated_sharpe_ratio` and `.monte_carlo_drawdown_
+  distribution` (§15 items 4-5, zero prior implementation anywhere in the
+  repo): a real Bailey & López de Prado Deflated Sharpe Ratio — the
+  probability that observed performance is genuine skill rather than the
+  best-of-`n_trials` artifact §8.7's purging/embargo splitters exist to
+  guard against, reducing to the ordinary Probabilistic Sharpe Ratio at
+  `n_trials=1` — and a Monte Carlo trade-order-shuffle drawdown distribution
+  testing sequencing-risk robustness. Fixing a real NaN bug (constant-zero
+  returns reaching skew/kurtosis before a variance guard could catch them)
+  and a flawed test assumption (a single DSR draw is uniform on [0,1] under
+  the null, not concentrated near 0.5 — that only holds in expectation
+  across many trials) both required first-principles statistical reasoning,
+  not just loosened tolerances.
+- `calibration_monitor.RollingCalibrationMonitor`: wraps Phase 3's static
+  Brier/ECE functions in a sliding window over a live `(predicted, actual)`
+  stream, flagging calibration drift past §8.3's target. The default window
+  size (1000) was empirically tuned, not guessed: a 100-trial sweep across
+  window sizes 200-2000 showed a smaller window's ECE is dominated by
+  binomial sampling noise even for a perfectly calibrated model, falsely
+  flagging drift; only ≥1000 gives an acceptably low (~1%) false-positive
+  rate against the 0.05 threshold.
+- `paper_trading.run_accelerated_paper_trading` and `.check_paper_vs_
+  backtest_divergence`: §17's own literal exit criterion, computed for
+  real — trains and calibrates on a prefix of the series, runs the real
+  backtest over a trailing range the model never saw, then checks whether
+  paper expectancy falls within one standard error of backtest expectancy
+  (the standard error of the *backtest* expectancy estimate, per §15's own
+  wording). `DivergenceResult.halt_scaling` is `True` both when divergence
+  exceeds one SE and when there's insufficient evidence to judge at all
+  (fewer than 2 backtest trades) — a claim that was never actually tested
+  isn't grounds to scale up either.
+
+**Still stubbed / honestly out of reach here:**
+
+- No real 60-day (or 30-day live-micro-capital) run against an actual
+  broker feed — see the substitution argument above; this is elapsed-time-
+  bound, not infrastructure-bound, and no mock closes that gap.
+- §19 Prompt 12's live observability surface (a dashboard panel showing
+  walk-forward/DSR/drawdown-distribution/calibration-drift results, an
+  alerting integration, a UI for the scaling decision) is out of §17's own
+  Phase 7 exit-row scope — nothing here needed a gateway or dashboard
+  surface, so none was added this phase, unlike every phase that did touch
+  the gateway/dashboard.
+- `crates/strategy`'s decision tree compilation (§5.5, <5µs) remains the
+  only still-unreal piece of the strategy VM, carried forward unchanged
+  from Phase 6.
 
 ### Everything else
 

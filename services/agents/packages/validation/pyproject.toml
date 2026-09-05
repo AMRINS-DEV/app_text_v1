@@ -1,0 +1,16 @@
+[project]
+name = "agents-validation"
+version = "0.1.0"
+description = "The §15/§17 Phase 7 validation pipeline: walk-forward backtesting, Deflated Sharpe + Monte Carlo drawdown, rolling calibration monitoring, and the accelerated-time paper-vs-backtest expectancy divergence check — wiring together Phase 3's previously-disjoint labeling/calibration/CV building blocks."
+requires-python = ">=3.11"
+dependencies = ["agents-models", "numpy>=2.0", "lightgbm>=4.5", "scikit-learn>=1.5", "scipy>=1.13"]
+
+[tool.uv.sources]
+agents-models = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/agents_validation"]
