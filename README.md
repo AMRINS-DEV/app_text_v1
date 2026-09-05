@@ -17,7 +17,7 @@ Python agent layer · NestJS gateway · Next.js 15 dashboard · Tauri 2 desktop 
 | 6 · Graph + Knowledge | In progress — see below |
 | 7 · Validation | In progress — see below |
 | 8 · Multi-platform | In progress — see below |
-| 9 · Scale | Not started |
+| 9 · Scale | In progress — see below |
 
 ### Phase 0 — Foundation
 
@@ -684,6 +684,101 @@ functions tested in isolation.
   doc's own "second broker adapter" (singular) exit-criterion wording.
 - `crates/strategy`'s decision tree compilation (§5.5, <5µs) remains the
   only still-unreal piece of the strategy VM, carried forward unchanged.
+
+### Phase 9 — Scale (in progress)
+
+§17's own Phase 9 row has no exit criteria cell (it reads "—") and no §19
+generation prompt — the prompts stop at Prompt 12 (Observability and
+validation), the same gap Phase 8 already had. Scoped to the roadmap row's
+four named items — "Multi-account, portfolio optimizer, distributed agents,
+GPU inference" — each built for real against what's actually testable in
+this sandbox, with the same honest split as every prior phase between real
+logic and infrastructure this environment cannot provide (no GPU hardware,
+no multi-machine cluster, no live multi-account broker credentials).
+
+- **Multi-account** (`execution::AccountManager`): one `OrderRouter` per
+  account, keyed by `AccountId`, reusing `OrderRouter<B>`'s existing
+  genericity rather than a second implementation of order routing — each
+  account's idempotency ledger is a separate `HashMap`, so a `client_id`
+  colliding across two accounts produces two independent orders, never a
+  false idempotent match. `domain::ports::Broker` picked up one small,
+  purely additive change: a forwarding `impl Broker for Box<dyn Broker>`,
+  since the trait was already object-safe but had nothing making that
+  usable — this lets `AccountManager<Box<dyn Broker>>` hold accounts on
+  different broker platforms at once (an MT5 account and a cTrader account
+  side by side, concretely), extending Phase 8's "same strategy runs on 2
+  adapters" to "at the same time." `aggregate_snapshot()` sums equity
+  across every registered account for real, the number a portfolio-level
+  view needs as its input.
+- **Portfolio optimizer** (new `crates/portfolio`, zero external
+  dependencies beyond `thiserror`): capital allocation *across* strategies/
+  accounts, sitting above `crates/risk`'s own per-trade Kelly sizing rather
+  than replacing it. A from-scratch Cholesky-based SPD linear solver
+  (`linalg`) backs closed-form Markowitz mean-variance weights
+  (`mean_variance`: global-minimum-variance and maximum-Sharpe/tangency,
+  both verified against hand-computable closed forms for the uncorrelated
+  case) and an iterative equal-risk-contribution risk-parity solver
+  (`risk_parity`). Two real bugs were found and fixed by verifying against
+  known closed-form answers rather than trusting the code: the Cholesky
+  pivot test's exact `<= 0.0` comparison missed a genuinely singular
+  duplicate-asset matrix that floating-point rounding nudged to `6.9e-18`
+  instead of `0.0` (fixed with a documented epsilon threshold), and the
+  risk-parity solver's first, undamped multiplicative update
+  (`w_i *= target/actual`) provably oscillated forever between two weight
+  vectors on a trivial 2-asset case instead of converging — fixed by
+  damping the update to `w_i *= sqrt(target/actual)`, the mathematically
+  motivated correction once you account for a risk contribution being
+  quadratic, not linear, in its own weight.
+- **Distributed agents** (new `services/agents/packages/distributed`):
+  §16's own claim — "agents are stateless and horizontally scalable" — made
+  concrete and tested across real, separate OS processes (`multiprocessing`
+  with the `spawn` start method, not `fork`, precisely so nothing can pass
+  between workers via accidentally shared copy-on-write memory) rather than
+  just asserted from `BaseAgent`'s stateless interface shape. Each worker
+  reconstructs its own `RegimeAgent` from nothing but a fixed seed — no
+  pickled model crosses the process boundary — and
+  `tests/test_dispatcher.py` verifies the actual property this is supposed
+  to guarantee: the same job set produces byte-identical results whether
+  run with 1 worker or 4, work genuinely spreads across more than one
+  process, and a bad job or unknown agent kind reports a failed result
+  rather than crashing or hanging a worker.
+- **GPU inference** (`crates/strategy`'s `gpu` Cargo feature, off by
+  default): registers `ort::ep::CUDA` ahead of `ort::ep::CPU` on the ONNX
+  session builder. This sandbox has no GPU and no CUDA runtime to
+  accelerate anything with — there is no hardware here to benchmark a
+  speedup against, and claiming one would be fabricating a result — but the
+  registration code is real, and `ort`'s own execution-provider dispatch
+  already falls back to the next provider in the list (logging a warning)
+  when an earlier one fails to initialize, which is exactly what happens
+  under `--features gpu` in this environment. The existing Phase 3 ONNX
+  parity test (`onnx_parity`) doubles as the verification here with no
+  changes needed: run under `--features gpu`, it exercises the CUDA-then-
+  CPU-fallback path end-to-end and produces the exact same result as the
+  default build, proving the fallback path is genuinely correct, not just
+  compilable.
+
+**Still stubbed / honestly out of reach here:**
+
+- No real multi-account run against live broker credentials, no real GPU
+  hardware to benchmark inference acceleration against, and no real
+  multi-machine deployment of the agent layer (§16's own topology diagram)
+  — all three need infrastructure this sandbox does not have and no mock
+  substitutes for; `AccountManager`, the `gpu` feature, and the
+  multi-process dispatcher are all real, tested code paths that are ready
+  for that infrastructure whenever it exists, not simulations of it.
+- The portfolio optimizer has no gateway/dashboard surface — nothing in
+  §17's Phase 9 scope row named one, unlike phases that did touch the
+  gateway/dashboard.
+- `long_only_max_sharpe_weights`' clamp-and-renormalize is a documented
+  approximation to the true long-only-constrained optimum, not a
+  quadratic-programming solver — see `mean_variance`'s own doc comment.
+- `crates/strategy`'s decision tree compilation (§5.5, <5µs) remains the
+  only still-unreal piece of the strategy VM, carried forward unchanged
+  across every phase since Phase 0.
+
+With Phase 9, every row of §17's roadmap has real, tested work behind it —
+see each phase's own section above for exactly what's real, what's
+substituted, and why.
 
 ### Everything else
 

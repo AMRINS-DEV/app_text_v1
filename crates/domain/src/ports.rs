@@ -92,3 +92,36 @@ pub trait Broker: Send {
     /// makes that comparison possible at all, not an optional extra.
     fn positions(&self) -> Result<Vec<PositionSnapshot>>;
 }
+
+/// `Broker` is object-safe by construction (no generic methods, no `Self`
+/// returns), so a `Box<dyn Broker>` can stand in for a concrete adapter
+/// wherever `B: Broker` is expected — this forwarding impl is what makes
+/// that actually usable rather than just theoretically possible. §17 Phase
+/// 9's multi-account support (`execution::AccountManager`) uses exactly
+/// this to let one process hold accounts on different broker platforms
+/// side by side (e.g. an MT5 account and a cTrader account at once) — a
+/// concrete extension of Phase 8's "same strategy runs on 2 adapters"
+/// claim to "at the same time."
+impl Broker for Box<dyn Broker> {
+    fn submit(&mut self, intent: &OrderIntent) -> Result<BrokerOrderId> {
+        (**self).submit(intent)
+    }
+    fn modify(&mut self, id: BrokerOrderId, sl: Option<i64>, tp: Option<i64>) -> Result<()> {
+        (**self).modify(id, sl, tp)
+    }
+    fn close(&mut self, id: BrokerOrderId, qty: Option<i64>) -> Result<()> {
+        (**self).close(id, qty)
+    }
+    fn poll_event(&mut self) -> Option<ExecEvent> {
+        (**self).poll_event()
+    }
+    fn account(&self) -> AccountSnapshot {
+        (**self).account()
+    }
+    fn constraints(&self, sym: SymbolId) -> Result<SymbolConstraints> {
+        (**self).constraints(sym)
+    }
+    fn positions(&self) -> Result<Vec<PositionSnapshot>> {
+        (**self).positions()
+    }
+}

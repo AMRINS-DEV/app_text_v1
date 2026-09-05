@@ -9,6 +9,7 @@ members = [
   "crates/strategy",
   "crates/risk",
   "crates/execution",
+  "crates/portfolio",
   "crates/storage",
   "crates/notify",
   "crates/replay",
@@ -40,6 +41,7 @@ indicators = { path = "crates/indicators" }
 strategy = { path = "crates/strategy" }
 risk = { path = "crates/risk" }
 execution = { path = "crates/execution" }
+portfolio = { path = "crates/portfolio" }
 storage = { path = "crates/storage" }
 notify = { path = "crates/notify" }
 replay = { path = "crates/replay" }

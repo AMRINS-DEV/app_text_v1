@@ -35,9 +35,38 @@ pub struct OnnxClassifier {
     n_features: usize,
 }
 
+/// §17 Phase 9 "GPU inference," behind the `gpu` feature (off by default —
+/// see this crate's Cargo.toml for why). CUDA is registered first with CPU
+/// as an explicit fallback; `ort`'s own `apply_execution_providers` already
+/// falls back to the next provider in the list (logging a warning) if an
+/// earlier one fails to initialize, so this ordering is a real, exercised
+/// degradation path even with no GPU present — this sandbox has neither
+/// the hardware nor a CUDA runtime to accelerate anything with, so it
+/// always and honestly takes the fallback branch; there is no way to
+/// benchmark a speedup here, only to verify the path compiles, registers,
+/// and still produces correct output (see `onnx_parity`'s `--features gpu`
+/// run in CI/locally).
+#[cfg(feature = "gpu")]
+fn execution_providers() -> Vec<ort::ep::ExecutionProviderDispatch> {
+    vec![ort::ep::CUDA::default().build(), ort::ep::CPU::default().build()]
+}
+
+#[cfg(not(feature = "gpu"))]
+fn execution_providers() -> Vec<ort::ep::ExecutionProviderDispatch> {
+    Vec::new()
+}
+
 impl OnnxClassifier {
     pub fn load(path: impl AsRef<Path>, n_features: usize) -> Result<Self, OnnxError> {
-        let session = ort::session::Session::builder()?.commit_from_file(path)?;
+        // `with_execution_providers` returns `Error<SessionBuilder>` (it
+        // hands the builder back on failure so a caller could retry with a
+        // different provider list) rather than the plain `ort::Error` every
+        // other fallible builder step here returns — an explicit `map_err`
+        // bridges the two since `?` only performs one `From` hop.
+        let mut builder = ort::session::Session::builder()?
+            .with_execution_providers(execution_providers())
+            .map_err(ort::Error::from)?;
+        let session = builder.commit_from_file(path)?;
         Ok(Self { session, n_features })
     }
 
