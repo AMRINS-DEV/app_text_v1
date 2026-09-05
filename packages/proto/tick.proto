@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package tradeos.v1;
+
+// Mirrors crates/domain/src/tick.rs::Tick — keep field order/semantics in sync.
+message Tick {
+  uint64 ts_ns = 1;        // broker timestamp, nanoseconds
+  uint64 recv_ns = 2;      // local receive timestamp (latency telemetry)
+  uint32 symbol_id = 3;    // interned; never a string on the hot path
+  int64 bid = 4;           // fixed-point, scaled by 10^price_digits
+  int64 ask = 5;
+  uint32 bid_volume = 6;
+  uint32 ask_volume = 7;
+  uint32 flags = 8;        // bitset: gap, stale, session_open, wide_spread
+}
+
+message Bar {
+  uint32 symbol_id = 1;
+  uint32 timeframe_seconds = 2;
+  uint64 ts_open_ns = 3;
+  int64 open = 4;
+  int64 high = 5;
+  int64 low = 6;
+  int64 close = 7;
+  uint64 volume = 8;
+}

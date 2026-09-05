@@ -1,0 +1,11 @@
+[package]
+name = "features"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "SIMD feature engine assembling the §8.1 feature vector from incremental indicators. Phase 3 scope."
+
+[dependencies]
+domain.workspace = true
+indicators.workspace = true

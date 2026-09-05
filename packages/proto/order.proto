@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+package tradeos.v1;
+
+import "common.proto";
+
+// Mirrors crates/domain/src/order.rs::OrderIntent — keep field order/semantics in sync.
+message OrderIntent {
+  string client_id = 1;        // idempotency key (ULID)
+  uint32 symbol_id = 2;
+  Side side = 3;
+  int64 qty = 4;                // fixed-point lots
+  OrderType order_type = 5;
+  optional int64 limit_px = 6;
+  optional int64 sl = 7;
+  optional int64 tp = 8;
+  TimeInForce tif = 9;
+  TradingMode mode = 10;
+  uint32 max_slippage_pts = 11;
+  repeated string signal_ids = 12; // full attribution chain (ULIDs)
+}
+
+message ExecEvent {
+  oneof kind {
+    Fill fill = 1;
+    Reject reject = 2;
+    Modify modify = 3;
+  }
+}
+
+message Fill {
+  string client_id = 1;
+  string broker_order_id = 2;
+  int64 fill_price = 3;
+  int64 qty = 4;
+  uint64 ts_ns = 5;
+}
+
+message Reject {
+  string client_id = 1;
+  string reason = 2;
+  uint64 ts_ns = 3;
+}
+
+message Modify {
+  string broker_order_id = 1;
+  optional int64 sl = 2;
+  optional int64 tp = 3;
+  uint64 ts_ns = 4;
+}

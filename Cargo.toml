@@ -1,0 +1,73 @@
+[workspace]
+resolver = "2"
+members = [
+  "crates/domain",
+  "crates/bus",
+  "crates/market-data",
+  "crates/features",
+  "crates/indicators",
+  "crates/strategy",
+  "crates/risk",
+  "crates/execution",
+  "crates/portfolio",
+  "crates/storage",
+  "crates/notify",
+  "crates/replay",
+  "crates/adapters/mt5",
+  "crates/adapters/tradingview",
+  "crates/adapters/ctrader",
+  "crates/adapters/binance",
+  "crates/bin/tradeos-core",
+  "crates/bin/tradeos-replay",
+  "crates/bin/tradeos-bench",
+  "crates/bin/mock-mt5-bridge",
+  "crates/bin/mock-ctrader-server",
+  "crates/bench",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "UNLICENSED"
+publish = false
+
+[workspace.dependencies]
+# intra-workspace crates
+domain = { path = "crates/domain" }
+bus = { path = "crates/bus" }
+market-data = { path = "crates/market-data" }
+features = { path = "crates/features" }
+indicators = { path = "crates/indicators" }
+strategy = { path = "crates/strategy" }
+risk = { path = "crates/risk" }
+execution = { path = "crates/execution" }
+portfolio = { path = "crates/portfolio" }
+storage = { path = "crates/storage" }
+notify = { path = "crates/notify" }
+replay = { path = "crates/replay" }
+adapter-mt5 = { path = "crates/adapters/mt5" }
+adapter-tradingview = { path = "crates/adapters/tradingview" }
+adapter-ctrader = { path = "crates/adapters/ctrader" }
+adapter-binance = { path = "crates/adapters/binance" }
+mock-mt5-bridge = { path = "crates/bin/mock-mt5-bridge" }
+mock-ctrader-server = { path = "crates/bin/mock-ctrader-server" }
+
+# shared external deps (single version across the workspace)
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yaml = "0.9"
+thiserror = "1"
+anyhow = "1"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "sync", "net"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+smallvec = { version = "1", features = ["serde"] }
+uuid = { version = "1", features = ["v4", "serde"] }
+
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"
+
+[profile.bench]
+inherits = "release"

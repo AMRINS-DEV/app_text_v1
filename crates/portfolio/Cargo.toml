@@ -1,0 +1,10 @@
+[package]
+name = "portfolio"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Portfolio-level capital allocation across strategies/accounts (§17 Phase 9: 'portfolio optimizer') — mean-variance and risk-parity weighting over a real, from-scratch Cholesky-based SPD solver, sitting above crates/risk's per-trade Kelly sizing rather than replacing it."
+
+[dependencies]
+thiserror.workspace = true

@@ -1,0 +1,13 @@
+[package]
+name = "bus"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Event bus ports: NATS JetStream (durable, cross-process) + shared-memory ring buffers (hot path). §6, §P4: everything is an event, everything is replayable."
+
+[dependencies]
+domain.workspace = true
+serde.workspace = true
+thiserror.workspace = true
+async-trait = "0.1"

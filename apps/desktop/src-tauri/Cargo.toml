@@ -1,0 +1,20 @@
+[workspace]
+# Deliberately its own workspace root — Tauri's GUI toolchain (webkit2gtk on
+# Linux, WebView2 on Windows) is a system dependency this environment does
+# not have, so this crate is kept out of the root Cargo workspace's
+# `cargo build --workspace` / CI matrix until Phase 4/11 wires up a machine
+# that can actually build it.
+
+[package]
+name = "tradeos-desktop"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"

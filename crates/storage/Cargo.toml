@@ -1,0 +1,12 @@
+[package]
+name = "storage"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Client ports for QuestDB (ticks/bars), Postgres+Timescale (trades/audit), FalkorDB (graph), Qdrant (embeddings). §6. Phase 1+ scope."
+
+[dependencies]
+domain.workspace = true
+async-trait = "0.1"
+thiserror.workspace = true

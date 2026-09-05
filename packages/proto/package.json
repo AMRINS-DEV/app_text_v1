@@ -1,0 +1,13 @@
+{
+  "name": "@tradeos/proto",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Protobuf source of truth (Tick/Bar/Signal/OrderIntent/ExecEvent) + generated TS client",
+  "main": "gen/ts/index.ts",
+  "scripts": {
+    "generate": "bash generate.sh"
+  },
+  "devDependencies": {
+    "ts-proto": "^2.3.0"
+  }
+}

@@ -1,0 +1,37 @@
+# Design doc §5.5 reference example. Strategies are data, not compiled code,
+# so they can be added/tuned from the dashboard without redeploying the core.
+id: london_breakout_v3
+symbols: [XAUUSD, EURUSD, GBPUSD]
+modes: [normal, aggressive]
+sessions: [london_open]
+entry:
+  require_all:
+    - regime: [trending, expansion]
+    - feature: atr_percentile
+      op: between
+      value: [0.35, 0.90]
+    - feature: spread_atr_ratio
+      op: lt
+      value: 0.08
+    - signal_fusion:
+        min_probability: 0.58
+        min_expected_r: 0.35
+        min_agreeing_sources: 2
+        required_kinds: [model, pattern]
+veto_any:
+  - news_blackout: {minutes_before: 15, minutes_after: 10, impact: [high]}
+  - feature: correlation_exposure
+    op: gt
+    value: 0.7
+exit:
+  stop: {type: atr, mult: 1.5, min_pts: 30}
+  target: {type: r_multiple, value: 2.2}
+  trailing: {type: chandelier, atr_mult: 2.5, activate_at_r: 1.0}
+  breakeven: {activate_at_r: 0.8, offset_r: 0.1}
+  quick_profit: {enabled: true, trigger_r: 0.6, close_fraction: 0.5}
+  time_stop: {max_bars: 40}
+sizing:
+  method: fractional_kelly
+  kelly_fraction: 0.25
+  risk_per_trade_pct: 0.5
+  max_concurrent: 3

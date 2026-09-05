@@ -1,0 +1,26 @@
+[project]
+name = "agents-orchestrator"
+version = "0.1.0"
+description = "Wires news/pattern/regime/critic together and publishes to the SignalBus (§3.2, §10). A plain async pipeline, not LangGraph — see the module doc comment for why."
+requires-python = ">=3.11"
+dependencies = [
+    "agents-core",
+    "agents-news",
+    "agents-pattern",
+    "agents-regime",
+    "agents-critic",
+]
+
+[tool.uv.sources]
+agents-core = { workspace = true }
+agents-news = { workspace = true }
+agents-pattern = { workspace = true }
+agents-regime = { workspace = true }
+agents-critic = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/agents_orchestrator"]

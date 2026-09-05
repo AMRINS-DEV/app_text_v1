@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package tradeos.v1;
+
+import "common.proto";
+
+// Mirrors crates/domain/src/signal.rs::Signal — keep field order/semantics in sync.
+message Signal {
+  string id = 1;                  // ULID
+  SignalSource source = 2;
+  uint32 symbol_id = 3;
+  Direction direction = 4;
+  float probability = 5;          // calibrated P(target hit before stop)
+  float confidence = 6;           // model's own uncertainty [0,1]
+  float expected_r = 7;           // expected return in R multiples
+  uint64 horizon_ms = 8;          // validity horizon of the thesis
+  uint64 ttl_ns = 9;              // hard expiry — core discards after this
+  RegimeTag regime = 10;
+  uint64 features_hash = 11;      // reproducibility anchor
+  optional string evidence_ref = 12; // -> Postgres/graph explanation record (uuid)
+}
+
+message SignalSource {
+  oneof kind {
+    string agent = 1;   // agent kind, e.g. "news-agent"
+    string model = 2;   // model artifact id
+    string rule = 3;    // rule id
+  }
+}

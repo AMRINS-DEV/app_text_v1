@@ -1,0 +1,17 @@
+[package]
+name = "tradeos-bench-suite"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+description = "Criterion benchmark suite. CI (.github/workflows/ci.yml) fails the build on a >10% latency regression against the committed baseline (§3.2)."
+
+[dependencies]
+indicators.workspace = true
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "indicators"
+harness = false

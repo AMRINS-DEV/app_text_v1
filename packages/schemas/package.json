@@ -1,0 +1,19 @@
+{
+  "name": "@tradeos/schemas",
+  "version": "0.1.0",
+  "private": true,
+  "description": "zod + JSON Schema for settings, signals and the domain contracts shared with crates/domain and packages/proto (§4).",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "echo 'no lint config yet'"
+  },
+  "dependencies": {
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0"
+  }
+}

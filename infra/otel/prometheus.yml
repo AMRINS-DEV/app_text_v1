@@ -1,0 +1,11 @@
+# Minimal scrape config (§14). Real target list (tradeos-core, gateway,
+# agents) is added once each service exposes a /metrics endpoint —
+# Phase 4/12 scope. Prometheus itself is left scraping only its own
+# metrics for now so `just infra-up` has something valid to start.
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]

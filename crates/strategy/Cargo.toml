@@ -1,0 +1,25 @@
+[package]
+name = "strategy"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Strategy VM: declarative YAML configs (§5.5) compiled to a decision tree, plus signal fusion (§8.4) and ONNX inference (§3.2, §17 Phase 3)."
+
+[features]
+# §17 Phase 9: "GPU inference." Off by default — this sandbox has no GPU
+# and no CUDA runtime to link/load against, so this gate keeps the default
+# workspace build/CI green while still shipping a real, compilable code
+# path (see onnx_model.rs's own doc comment for the honest scope of what
+# "real" means here without hardware to verify it against).
+gpu = ["ort/cuda"]
+
+[dependencies]
+domain.workspace = true
+serde.workspace = true
+serde_yaml.workspace = true
+thiserror.workspace = true
+ort = "2.0.0-rc.13"
+
+[dev-dependencies]
+serde_json.workspace = true

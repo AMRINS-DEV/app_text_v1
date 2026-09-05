@@ -1,0 +1,11 @@
+[package]
+name = "tradeos-bench"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Ad hoc latency benchmark binary (§4). Statistically rigorous benchmarks with CI regression gating live in crates/bench (criterion); this binary is for quick manual p50/p99/p999 checks against the §5.2 budget table."
+
+[dependencies]
+domain.workspace = true
+indicators.workspace = true

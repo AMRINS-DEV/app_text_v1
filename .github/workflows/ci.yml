@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  rust:
+    name: Rust workspace
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: cargo build
+        run: cargo build --workspace --all-targets
+      - name: clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: install cargo-nextest
+        uses: taiki-e/install-action@nextest
+      - name: cargo nextest run
+        run: cargo nextest run --workspace
+      - name: criterion benchmarks (regression gate)
+        run: |
+          cargo bench --workspace -- --output-format bencher | tee bench-output.txt
+        # §3.2: "Benchmarks run in CI; a >10% latency regression fails the build."
+        # A committed-baseline diff step (e.g. via `cargo-benchcmp` or
+        # `criterion`'s own baseline flag against a stored `main` baseline)
+        # is Phase 1 scope, once there's a real hot-path pipeline whose
+        # latency budget (§5.2) is worth gating on.
+
+  typescript:
+    name: TypeScript workspace
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -r typecheck
+      - run: pnpm -r build
+      # apps/desktop's build script is a no-op echo in CI (see its
+      # package.json) — the Tauri GUI build needs webkit2gtk/gdk system
+      # packages this runner doesn't install (Phase 4/11 scope).
+
+  python:
+    name: Python agents workspace
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/agents
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - run: uv sync --all-packages
+      - run: uv run ruff check .
+      - run: uv run mypy packages/*/src
+      - run: uv run pytest

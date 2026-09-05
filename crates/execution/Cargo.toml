@@ -1,0 +1,15 @@
+[package]
+name = "execution"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Order router: idempotency, slippage model, atomic SL/TP entry (§9.3, §5.1 exec stage). Phase 2."
+
+[dependencies]
+domain.workspace = true
+smallvec.workspace = true
+rand = "0.9"
+
+[dev-dependencies]
+risk.workspace = true

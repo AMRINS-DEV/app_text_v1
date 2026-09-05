@@ -1,0 +1,11 @@
+[package]
+name = "notify"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Telegram, webhook and desktop-push notifications (kill switch confirmations, guard trips, alerts). Phase 4 scope."
+
+[dependencies]
+async-trait = "0.1"
+thiserror.workspace = true
