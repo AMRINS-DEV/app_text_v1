@@ -4,7 +4,16 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 publish.workspace = true
-description = "cTrader adapter (native WS/REST). v2 stub proving the same MarketDataSource/Broker traits work across a second platform with zero core changes (§17 Phase 8)."
+description = "cTrader adapter: a real Broker/MarketDataSource implementation over a documented, simplified stand-in for cTrader's Open API (§17 Phase 8: 'second broker adapter... same strategy runs on 2 adapters with no core change')."
 
 [dependencies]
 domain.workspace = true
+thiserror.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+crossbeam-channel = "0.5"
+
+[dev-dependencies]
+execution.workspace = true
+mock-ctrader-server.workspace = true
+smallvec.workspace = true

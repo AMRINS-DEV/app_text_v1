@@ -16,7 +16,7 @@ Python agent layer · NestJS gateway · Next.js 15 dashboard · Tauri 2 desktop 
 | 5 · Agent layer | In progress — see below |
 | 6 · Graph + Knowledge | In progress — see below |
 | 7 · Validation | In progress — see below |
-| 8 · Multi-platform | Not started |
+| 8 · Multi-platform | In progress — see below |
 | 9 · Scale | Not started |
 
 ### Phase 0 — Foundation
@@ -601,6 +601,89 @@ mypy clean):
 - `crates/strategy`'s decision tree compilation (§5.5, <5µs) remains the
   only still-unreal piece of the strategy VM, carried forward unchanged
   from Phase 6.
+
+### Phase 8 — Multi-platform (in progress)
+
+Scoped to §17's own Phase 8 exit row — "TradingView webhook + UDF datafeed,
+second broker adapter | Same strategy runs on 2 adapters with no core
+change." `domain::ports`'s own doc comment makes the claim this phase has to
+prove concrete: "Adding a platform means implementing these two traits in a
+new `crates/adapters/*` crate — zero changes here or in `crates/strategy`/
+`crates/risk`." Nothing in `crates/domain`, `crates/strategy`, `crates/risk`,
+or `crates/execution` changed to build this phase.
+
+**`adapter-ctrader`** (§5.4's second broker platform), tested against its
+own `mock-ctrader-server` test double — the same "real adapter, mock
+counterparty" split `adapter-mt5`/`mock-mt5-bridge` established in Phase 1,
+since this sandbox has neither network access nor credentials for a real
+cTrader account. Its wire protocol (`adapter_ctrader::protocol`) is an
+honestly documented, simplified stand-in for cTrader's real Protobuf-over-
+TLS Open API — length-prefixed framing with a `req_id` correlation field
+mirroring Open API's real `clientMsgId` mechanism, carrying `serde_json`
+payloads of this project's own domain types, rather than a guessed
+reimplementation of Open API's exact Protobuf schema (this project has no
+way to verify real field numbers against a live server, so claiming byte-
+for-byte fidelity would be pretending, the same standard that ruled out a
+literal FalkorDB in Phase 6 and NautilusTrader in Phase 7). It deliberately
+uses a different transport stack than `adapter-mt5` — blocking
+`std::net::TcpStream` + JSON here, vs. async ZMQ + rkyv there — so the two
+adapters share no implementation, only the trait boundary. Order acceptance
+is synchronous; the resulting fill arrives as a separate, unsolicited
+frame a reader thread demultiplexes from replies by `req_id`, routed to
+`poll_event` — the same submit-then-poll lifecycle `SimBroker`'s own doc
+comment describes, genuinely crossing a socket boundary this time.
+
+The exit criterion itself is a real test, not a prose argument:
+`tests/cross_adapter_parity.rs`'s `run_router_scenario` is one generic
+function over `B: domain::ports::Broker`, run once with `execution::
+SimBroker` and once with `CTraderBroker` against a live `mock-ctrader-
+server`, asserting both produce identical externally observable outcomes
+(reject-missing-SL/TP, idempotent resubmission, an observed fill, position
+count before/after close) for the exact same `OrderRouter` call sequence.
+
+**`adapter-tradingview`** (§5.4's signal-source-only platform — TradingView
+cannot execute retail orders, so this crate only ever implements
+`MarketDataSource`), the project's first Rust HTTP server (`axum`, chosen
+as the only already-tokio-based option with nothing larger already in the
+workspace):
+
+- `POST /webhook`: a Pine-alert receiver. A TradingView alert fires *at* a
+  price, so — once authenticated against a shared-secret token — that price
+  becomes a genuine, if one-sided (no independent bid/ask), `Tick` for its
+  named symbol (§5.4 point 2).
+- `GET /udf/{config,symbols,history}`: a real TradingView UDF ("Universal
+  Data Feed") datafeed server — unlike the cTrader substitution, UDF is
+  TradingView's actual small, public JSON-over-HTTP protocol, faithfully
+  implemented rather than stood in for, including genuine resampling
+  (`udf::resample`) from the natively-aggregated 1-minute bars up to
+  whatever resolution a client requests, not just relabeled data.
+
+Both routes share one real data path: every webhook alert folds into this
+adapter's own `market_data::BarAggregator` state, so `/udf/history`, the
+trait's own `history()` method, and a live TradingView chart pointed at this
+server all read the same underlying bars — one real pipeline, not three
+independent stubs. Verified against a real bound port with a real `reqwest`
+HTTP client (`tests/webhook_and_udf_integration.rs`), not just handler
+functions tested in isolation.
+
+**Still stubbed / honestly out of reach here:**
+
+- `adapter-binance`/`adapter-ctrader`'s own third message types
+  (`SymbolInfo`/`ProtoOASymbolByIdReq`, real historical trendbars) are
+  deferred the same way `Mt5Broker::constraints`/`Mt5MarketData::history`
+  deferred theirs in Phase 1/2 — not exercised by the order-routing-parity
+  exit criterion.
+- No real cTrader Open API or TradingView account exists to validate either
+  adapter's wire format against in this sandbox — both are honestly
+  documented substitutions/faithful-but-unverified-against-the-real-thing
+  implementations, not claims of production readiness.
+- `adapter-binance`/`adapter-ctrader`'s own doc comments call cTrader/
+  Binance/IBKR collectively "v2" in §5.4's adapter matrix; only cTrader was
+  built out this phase (per its own Cargo.toml description explicitly
+  naming Phase 8) — Binance stays a stub, unchanged, matching the design
+  doc's own "second broker adapter" (singular) exit-criterion wording.
+- `crates/strategy`'s decision tree compilation (§5.5, <5µs) remains the
+  only still-unreal piece of the strategy VM, carried forward unchanged.
 
 ### Everything else
 

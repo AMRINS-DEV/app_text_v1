@@ -1,0 +1,19 @@
+[package]
+name = "mock-ctrader-server"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Test double standing in for a real cTrader Open API server (§17 Phase 8, same rationale as mock-mt5-bridge: adapter-ctrader is developed and tested against this, not a real cTrader account, which this sandbox has neither network access nor credentials for)."
+
+[lib]
+name = "mock_ctrader_server"
+path = "src/lib.rs"
+
+[[bin]]
+name = "mock-ctrader-server"
+path = "src/main.rs"
+
+[dependencies]
+domain.workspace = true
+adapter-ctrader.workspace = true
